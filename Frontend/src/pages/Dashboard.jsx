@@ -6,6 +6,7 @@ import ReportPothole from "../components/ReportPothole";
 export default function Dashboard() {
   const [username, setUsername] = useState("User");
   const [greeting, setGreeting] = useState("");
+  const [pothholes, setPotholes] = useState([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
@@ -35,7 +36,8 @@ export default function Dashboard() {
         <StatsSection />
 
         {/* 👇 THIS is the correct integration */}
-        <ReportPothole />
+        {/* <ReportPothole /> */}
+        <ReportPothole onNewPothole={(p) => setPotholes(prev => [...prev, p])} />
 
       </div>
     </div>
