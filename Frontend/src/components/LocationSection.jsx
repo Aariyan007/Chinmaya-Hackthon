@@ -1,27 +1,35 @@
 import { useState } from "react";
 
-export default function LocationSection() {
+export default function LocationSection({ onLocation }) {
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState("");
 
   const getLocation = () => {
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
 
-      setLocation({ lat, lon });
+        // update local UI state
+        setLocation({ lat, lon });
 
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-      );
-      const data = await res.json();
-      setAddress(data.display_name);
-    });
+        // send to parent (IMPORTANT)
+        onLocation({ lat, lon });
+
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+        );
+        const data = await res.json();
+        setAddress(data.display_name);
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+      }
+    );
   };
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-sm">
-
       <h2 className="text-xl font-bold text-blue-600 mb-4">
         📍 Detect Location Automatically
       </h2>
@@ -38,14 +46,6 @@ export default function LocationSection() {
           <p><strong>Latitude:</strong> {location.lat}</p>
           <p><strong>Longitude:</strong> {location.lon}</p>
           <p><strong>Address:</strong> {address}</p>
-
-          <iframe
-            title="map"
-            width="100%"
-            height="250"
-            className="rounded-xl mt-4"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${location.lon-0.01}%2C${location.lat-0.01}%2C${location.lon+0.01}%2C${location.lat+0.01}&layer=mapnik&marker=${location.lat}%2C${location.lon}`}
-          />
         </div>
       )}
     </div>
