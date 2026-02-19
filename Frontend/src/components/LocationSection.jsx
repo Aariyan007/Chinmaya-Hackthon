@@ -10,17 +10,19 @@ export default function LocationSection({ onLocation }) {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
 
-        // update local UI state
-        setLocation({ lat, lon });
-
-        // send to parent (IMPORTANT)
-        onLocation({ lat, lon });
-
+        // Fetch address from Nominatim first
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
         );
         const data = await res.json();
-        setAddress(data.display_name);
+        const addressName = data.display_name;
+
+        // update local UI state
+        setLocation({ lat, lon, address: addressName });
+        setAddress(addressName);
+
+        // send to parent with address (IMPORTANT)
+        onLocation({ lat, lon, address: addressName });
       },
       (err) => {
         console.error("Geolocation error:", err);
