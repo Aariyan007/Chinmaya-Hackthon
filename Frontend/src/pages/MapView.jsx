@@ -73,16 +73,16 @@ function computePotholePenalty(route, snappedPotholes, criticality) {
 }
 
 const DUMMY_POTHOLES = [
-  { lat: 9.9944848, lng: 76.3016587, severity: 'severe',   confidence: 0.97 },
+  // { lat: 9.9944848, lng: 76.3016587, severity: 'severe',   confidence: 0.97 },
   { lat: 9.998127,  lng: 76.299928,  severity: 'severe',   confidence: 0.93 },
   { lat: 9.994999,  lng: 76.292152,  severity: 'moderate', confidence: 0.88 },
   { lat: 10.001680, lng: 76.302950,  severity: 'severe',   confidence: 0.91 },
   { lat: 10.004053, lng: 76.304921,  severity: 'moderate', confidence: 0.85 },
-  { lat: 9.985764,  lng: 76.281511,  severity: 'mild',     confidence: 0.80 },
+  // { lat: 9.985764,  lng: 76.281511,  severity: 'mild',     confidence: 0.80 },
 ];
 
 function MapView() {
-  const SERVER = "http://10.72.217.227:5001";
+  const SERVER = "http://localhost:5001";
 
   const center = [9.9930419, 76.3017048];
 

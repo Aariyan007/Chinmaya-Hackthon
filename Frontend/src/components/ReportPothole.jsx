@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ref, push, update, get } from "firebase/database";
 import { db, auth } from "../firebase";
-
 import LocationSection from "./LocationSection";
 import UploadBanner from "./UploadBanner";
 
@@ -18,7 +17,6 @@ export default function ReportPothole() {
     }
 
     const user = auth.currentUser;
-
     if (!user) {
       alert("User not logged in");
       return;
@@ -29,72 +27,61 @@ export default function ReportPothole() {
     try {
       setLoading(true);
 
-      // ==========================
-      // 1️⃣ AI Backend Call
-      // ==========================
+      // 1️⃣ Send to AI
       const formData = new FormData();
       formData.append("images", image);
       formData.append("lat", location.lat);
       formData.append("lng", location.lon);
 
-      const response = await fetch(
-        "http://localhost:5001/report-pothole",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await fetch("http://localhost:5001/report-pothole", {
+        method: "POST",
+        body: formData,
+      });
 
-      const aiData = await response.json();
+      const aiData = await res.json();
+      console.log("AI Response:", aiData);
       setResult(aiData);
 
-      // ==========================
-      // 2️⃣ Get Username from Firebase DB
-      // ==========================
-      const userSnap = await get(ref(db, `users/${userId}`));
+      // 2️⃣ Calculate coins
+      const confidence = parseFloat(aiData.confidence) || 0;
+      const severityBonus = aiData.severity === "severe" ? 50 : aiData.severity === "moderate" ? 30 : 10;
+      const coinsAwarded = Math.round(50 + (confidence * 100) + severityBonus);
 
+      // 3️⃣ Get user from Firebase
+      const userSnap = await get(ref(db, `users/${userId}`));
       if (!userSnap.exists()) {
         alert("User record not found.");
         return;
       }
-
       const userData = userSnap.val();
-      const username = userData.username;
 
-      // ==========================
-      // 3️⃣ Create Report in Firebase
-      // ==========================
+      // 4️⃣ Save report
       const newReportRef = push(ref(db, "reports"));
-      const reportId = newReportRef.key;
-
       await update(newReportRef, {
-        reportId,
+        reportId: newReportRef.key,
         userId,
-        username,
-        location: location.address && location.address.trim() ? location.address : "Unknown Location",
+        username: userData.username,
+        location: location.address?.trim() || "Unknown Location",
         latitude: location.lat,
         longitude: location.lon,
         severity: aiData.severity || "Unknown",
         confidence: aiData.confidence || "N/A",
         status: "Pending",
-        coinsAwarded: 50,
+        coinsAwarded,
         createdAt: Date.now(),
       });
 
-      // ==========================
-      // 4️⃣ Update User Stats
-      // ==========================
+      // 5️⃣ Update user stats
       await update(ref(db, `users/${userId}`), {
-        coins: (userData.coins || 0) + 50,
+        coins: (userData.coins || 0) + coinsAwarded,
         reports: (userData.reports || 0) + 1,
       });
 
-      alert("Report submitted successfully! +50 Coins 🎉");
-
+      alert(`Report submitted successfully! +${coinsAwarded} Coins 🎉`);
       setImage(null);
 
     } catch (error) {
-      console.error("Error submitting report:", error);
+      console.error("Error:", error);
       alert("Error submitting report.");
     } finally {
       setLoading(false);

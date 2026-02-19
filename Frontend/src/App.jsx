@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import MyReports from "./pages/MyReports";
 import Profile from "./pages/Profile";
 import MapView from "./pages/MapView";
+import Admin from "./pages/Admin";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -43,6 +44,10 @@ function App() {
         <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignUp />} />
 
         {/* Protected Routes */}
+        <Route
+          path="/admin"
+          element={user ? <Admin /> : <Navigate to="/login" />}
+        />
         <Route
           path="/dashboard"
           element={user ? <Dashboard /> : <Navigate to="/login" />}

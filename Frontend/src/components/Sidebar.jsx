@@ -20,7 +20,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white shadow-lg p-6 hidden md:block">
       <h2 className="text-2xl font-extrabold text-blue-600 mb-10">
-        CivicAI
+        POTHREDEEM
       </h2>
 
       <nav className="space-y-4">

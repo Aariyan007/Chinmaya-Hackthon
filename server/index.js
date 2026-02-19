@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
     // console.log("Hello world");
     res.send("Hello world");
 })
-
+const MERGE_DISTANCE_METERS = 50;
 const potholes = [];
 
 let syncData = null;
