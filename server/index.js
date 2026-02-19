@@ -11,10 +11,15 @@ app.use(express.json());
 
 const upload = multer({ dest: "uploads/" });
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
     // console.log("Hello world");
     res.send("Hello world");
 })
+
+const potholes = [];
+
+let syncData = null;
+
 
 app.post("/report-pothole", upload.array("images", 3), async (req, res) => {
     try {
@@ -31,18 +36,83 @@ app.post("/report-pothole", upload.array("images", 3), async (req, res) => {
             { headers: form.getHeaders() }
         );
 
-        res.json({
+        const pothole = {
             lat,
             lng,
             severity: aiRes.data.severity,
-            confidence: aiRes.data.confidence
-        });
+            confidence: aiRes.data.confidence,
+            timestamp: Date.now()
+        };
+
+        // potholes.push(pothole);
+        const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) *
+                Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+
+        const severityRank = {
+            mild: 1,
+            moderate: 2,
+            severe: 3
+        };
+
+        const existing = potholes.find(p =>
+            getDistanceInMeters(
+                parseFloat(p.lat),
+                parseFloat(p.lng),
+                parseFloat(lat),
+                parseFloat(lng)
+            ) < MERGE_DISTANCE_METERS
+        );
+
+        if (existing) {
+            // escalate risk
+            if (severityRank[aiRes.data.severity] > severityRank[existing.severity]) {
+                existing.severity = aiRes.data.severity;
+            }
+            existing.confidence = Math.max(existing.confidence, aiRes.data.confidence);
+            existing.timestamp = Date.now();
+        } else {
+            potholes.push({
+                lat,
+                lng,
+                severity: aiRes.data.severity,
+                confidence: aiRes.data.confidence,
+                timestamp: Date.now()
+            });
+        }
+
+        res.json(pothole);
+
 
     } catch (err) {
         res.status(500).json({ error: "AI service failed" });
     }
 });
 
+app.get("/potholes", (req, res) => {
+    res.json(potholes);
+});
+app.delete("/potholes", (req, res) => {
+    potholes.length = 0; // clears array in-place
+    res.json({ success: true, message: "All potholes cleared" });
+});
+app.post("/sync", (req, res) => {
+  syncData = req.body;
+  res.json({ status: "saved" });
+});
+
+// Follower reads data here
+app.get("/sync", (req, res) => {
+  res.json(syncData);
+});
 
 app.listen(5001, () => {
     console.log("Node server running on http://localhost:5001");
