@@ -22,30 +22,25 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      // Store userId in localStorage
       localStorage.setItem("userId", user.uid);
 
-      // Fetch and store username from Firebase
       const userRef = ref(db, `users/${user.uid}`);
       const snapshot = await get(userRef);
+
       if (snapshot.exists()) {
         const userData = snapshot.val();
         localStorage.setItem("username", userData.username);
+
+        if (userData.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       }
-
-      alert("Login Successful!");
-      navigate("/dashboard");
-
     } catch (error) {
       alert(error.message);
     }

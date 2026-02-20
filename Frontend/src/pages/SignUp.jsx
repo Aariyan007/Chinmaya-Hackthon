@@ -25,14 +25,8 @@ export default function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
       await set(ref(db, `users/${user.uid}`), {
@@ -44,13 +38,17 @@ export default function SignUp() {
         joinedAt: Date.now()
       });
 
-      // Store userId and username in localStorage for immediate access
       localStorage.setItem("userId", user.uid);
       localStorage.setItem("username", formData.username);
 
-      alert("User Registered Successfully!");
-      navigate("/login");
+      // alert("User Registered Successfully!");
 
+      // ✅ Redirect based on role instead of always going to /login
+      if (formData.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       alert(error.message);
     }

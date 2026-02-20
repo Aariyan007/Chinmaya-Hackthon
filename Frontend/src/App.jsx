@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
-
+import { ref, get } from "firebase/database";
+import { auth, db } from "./firebase";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
@@ -13,20 +13,24 @@ import Admin from "./pages/Admin";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Firebase Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const snapshot = await get(ref(db, `users/${currentUser.uid}/role`));
+        setRole(snapshot.exists() ? snapshot.val() : "informer");
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Prevent flashing before auth loads
-  if (loading) {
+  if (loading || (user && role === null)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
@@ -34,40 +38,40 @@ function App() {
     );
   }
 
+  // Redirect based on role after login
+  const homeRoute = role === "admin" ? "/admin" : "/dashboard";
+
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Public Routes */}
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignUp />} />
+        <Route path="/" element={user ? <Navigate to={homeRoute} /> : <Login />} />
+        <Route path="/login" element={user ? <Navigate to={homeRoute} /> : <Login />} />
+        <Route path="/signup" element={user ? <Navigate to={homeRoute} /> : <SignUp />} />
 
-        {/* Protected Routes */}
+        {/* Admin Only */}
         <Route
           path="/admin"
-          element={user ? <Admin /> : <Navigate to="/login" />}
+          element={user && role === "admin" ? <Admin /> : <Navigate to="/login" />}
         />
+
+        {/* Informer Only */}
         <Route
           path="/dashboard"
-          element={user ? <Dashboard /> : <Navigate to="/login" />}
+          element={user && role !== "admin" ? <Dashboard /> : <Navigate to={homeRoute} />}
         />
-
         <Route
           path="/reports"
-          element={user ? <MyReports /> : <Navigate to="/login" />}
+          element={user && role !== "admin" ? <MyReports /> : <Navigate to={homeRoute} />}
         />
-
         <Route
           path="/profile"
-          element={user ? <Profile /> : <Navigate to="/login" />}
+          element={user && role !== "admin" ? <Profile /> : <Navigate to={homeRoute} />}
         />
-
         <Route
           path="/map"
-          element={user ? <MapView /> : <Navigate to="/login" />}
+          element={user && role !== "admin" ? <MapView /> : <Navigate to={homeRoute} />}
         />
-
       </Routes>
     </BrowserRouter>
   );
